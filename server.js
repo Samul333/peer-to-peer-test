@@ -1,20 +1,15 @@
 const express = require('express')
 const app = express()
-const cors = require('cors')
-
+// const cors = require('cors')
+// app.use(cors())
 const server = require('http').Server(app)
-const io = require('socket.io')(server,{
-	cors: {
-		origin: "*",
-		methods: [ "GET", "POST" ]
-	}
-})
+const io = require('socket.io')(server)
 const { ExpressPeerServer } = require('peer');
 const peerServer = ExpressPeerServer(server, {
   debug: true
 });
 const { v4: uuidV4 } = require('uuid')
-app.use(cors())
+
 app.use('/peerjs', peerServer);
 
 app.set('view engine', 'ejs')
@@ -31,7 +26,7 @@ app.get('/:room', (req, res) => {
 io.on('connection', socket => {
   socket.on('join-room', (roomId, userId) => {
     socket.join(roomId)
-    socket.broadcast.to(roomId).emit('user-connected', userId);
+    socket.to(roomId).broadcast.emit('user-connected', userId);
     // messages
     socket.on('message', (message) => {
       //send message to the same room
@@ -39,11 +34,9 @@ io.on('connection', socket => {
   }); 
 
     socket.on('disconnect', () => {
-      socket.broadcast.to(roomId).emit('user-disconnected', userId)
+      socket.to(roomId).broadcast.emit('user-disconnected', userId)
     })
   })
 })
 
-server.listen(process.env.PORT||3030,()=>{
-  console.log('The server is up and running')
-})
+server.listen(process.env.PORT||3030)
